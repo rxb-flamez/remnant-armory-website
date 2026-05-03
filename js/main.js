@@ -104,6 +104,7 @@ const revealSelectors = [
   '.course-card', '.learn-item',
   '.schedule-detail', '.pkg',
   '.register-title', '.register-sub', '.contact-item',
+  '.section-eyebrow',
 ];
 
 document.querySelectorAll(revealSelectors.join(', ')).forEach((el, i) => {
@@ -111,37 +112,24 @@ document.querySelectorAll(revealSelectors.join(', ')).forEach((el, i) => {
   el.style.transitionDelay = `${(i % 4) * 0.08}s`;
 });
 
-new IntersectionObserver(
+const revealIO = new IntersectionObserver(
   entries => {
     entries.forEach(e => {
       if (e.isIntersecting) {
         e.target.classList.add('visible');
-        /* unobserve so delay doesn't replay on scroll-up */
         e.target.style.transitionDelay = '0s';
+        revealIO.unobserve(e.target);
       }
     });
   },
   { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
-).observe = (() => {
-  const io = new IntersectionObserver(
-    entries => {
-      entries.forEach(e => {
-        if (e.isIntersecting) {
-          e.target.classList.add('visible');
-          e.target.style.transitionDelay = '0s';
-        }
-      });
-    },
-    { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
-  );
-  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
-  return io.observe.bind(io);
-})();
+);
+document.querySelectorAll('.reveal').forEach(el => revealIO.observe(el));
 
 // ── ACTIVE NAV LINK (scroll spy) ────────────────────────────
 const spyAnchors = document.querySelectorAll('.nav-links a[href^="#"]');
 
-new IntersectionObserver(
+const spyIO = new IntersectionObserver(
   entries => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
@@ -153,20 +141,5 @@ new IntersectionObserver(
     });
   },
   { rootMargin: '-40% 0px -55% 0px' }
-).observe = (() => {
-  const spy = new IntersectionObserver(
-    entries => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          const id = entry.target.id;
-          spyAnchors.forEach(a => {
-            a.style.color = a.getAttribute('href') === `#${id}` ? 'var(--text)' : '';
-          });
-        }
-      });
-    },
-    { rootMargin: '-40% 0px -55% 0px' }
-  );
-  document.querySelectorAll('section[id]').forEach(s => spy.observe(s));
-  return spy.observe.bind(spy);
-})();
+);
+document.querySelectorAll('section[id]').forEach(s => spyIO.observe(s));
