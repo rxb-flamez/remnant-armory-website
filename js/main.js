@@ -26,83 +26,147 @@ navLinks.querySelectorAll('a').forEach(a => {
   });
 });
 
-// ── EMBER PARTICLES ─────────────────────────────────────────
-(function spawnEmbers() {
+// ── FIRE PARTICLE SYSTEM ────────────────────────────────────
+(function ignite() {
   const container = document.getElementById('embers');
   if (!container) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-  const COUNT = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 35;
+  // Three tiers of fire particles
+  const tiers = [
+    {
+      cls:           'ember-spark',
+      count:         28,
+      sizeMin:       1.2,
+      sizeMax:       2.8,
+      durMin:        3.5,
+      durMax:        6.5,
+      delayMax:      10,
+      driftRange:    70,
+    },
+    {
+      cls:           'ember-med',
+      count:         22,
+      sizeMin:       3,
+      sizeMax:       6,
+      durMin:        5.5,
+      durMax:        10,
+      delayMax:      12,
+      driftRange:    100,
+    },
+    {
+      cls:           'ember-chunk',
+      count:         10,
+      sizeMin:       7,
+      sizeMax:       13,
+      durMin:        8,
+      durMax:        14,
+      delayMax:      14,
+      driftRange:    80,
+    },
+  ];
 
-  for (let i = 0; i < COUNT; i++) {
-    const el   = document.createElement('div');
-    el.className = 'ember';
-    const size = Math.random() * 2.5 + 1;
-    el.style.cssText = [
-      `left: ${Math.random() * 100}%`,
-      `width: ${size}px`,
-      `height: ${size}px`,
-      `animation-duration: ${(Math.random() * 7 + 5).toFixed(1)}s`,
-      `animation-delay: ${(Math.random() * 10).toFixed(2)}s`,
-      `--drift: ${((Math.random() - 0.5) * 90).toFixed(0)}px`,
-    ].join(';');
-    container.appendChild(el);
+  tiers.forEach(tier => {
+    for (let i = 0; i < tier.count; i++) {
+      const el   = document.createElement('div');
+      el.className = tier.cls;
+
+      const size  = rand(tier.sizeMin, tier.sizeMax);
+      const dur   = rand(tier.durMin,  tier.durMax).toFixed(2);
+      const delay = rand(0, tier.delayMax).toFixed(2);
+      const drift = ((Math.random() - 0.5) * 2 * tier.driftRange).toFixed(1);
+
+      // Scatter across bottom 20% of viewport for a natural fire base
+      const startY = rand(0, 20);
+
+      el.style.cssText = [
+        `left: ${rand(0, 100).toFixed(1)}%`,
+        `bottom: ${startY.toFixed(1)}%`,
+        `width: ${size.toFixed(1)}px`,
+        `height: ${size.toFixed(1)}px`,
+        `animation-duration: ${dur}s`,
+        `animation-delay: -${delay}s`,   /* negative delay = already in progress on load */
+        `--drift: ${drift}px`,
+      ].join('; ');
+
+      container.appendChild(el);
+    }
+  });
+
+  function rand(min, max) {
+    return Math.random() * (max - min) + min;
   }
 })();
 
 // ── SCROLL REVEAL ───────────────────────────────────────────
 const revealSelectors = [
-  '.about-text',
-  '.about-pillars',
-  '.pillar',
-  '.course-card',
-  '.learn-item',
-  '.schedule-detail',
-  '.pkg',
-  '.register-title',
-  '.register-sub',
-  '.contact-item',
+  '.about-text', '.about-pillars', '.pillar',
+  '.course-card', '.learn-item',
+  '.schedule-detail', '.pkg',
+  '.register-title', '.register-sub', '.contact-item',
 ];
 
-const revealEls = document.querySelectorAll(revealSelectors.join(', '));
-
-revealEls.forEach((el, i) => {
+document.querySelectorAll(revealSelectors.join(', ')).forEach((el, i) => {
   el.classList.add('reveal');
-  const delay = (i % 4) * 0.1;
-  el.style.transitionDelay = `${delay}s`;
+  el.style.transitionDelay = `${(i % 4) * 0.08}s`;
 });
 
-const io = new IntersectionObserver(
+new IntersectionObserver(
   entries => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('visible');
-        io.unobserve(entry.target);
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        /* unobserve so delay doesn't replay on scroll-up */
+        e.target.style.transitionDelay = '0s';
       }
     });
   },
   { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
-);
-
-document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+).observe = (() => {
+  const io = new IntersectionObserver(
+    entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          e.target.style.transitionDelay = '0s';
+        }
+      });
+    },
+    { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+  );
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+  return io.observe.bind(io);
+})();
 
 // ── ACTIVE NAV LINK (scroll spy) ────────────────────────────
-const sections   = document.querySelectorAll('section[id]');
-const navAnchors = document.querySelectorAll('.nav-links a[href^="#"]');
+const spyAnchors = document.querySelectorAll('.nav-links a[href^="#"]');
 
-const spy = new IntersectionObserver(
+new IntersectionObserver(
   entries => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
         const id = entry.target.id;
-        navAnchors.forEach(a => {
-          a.style.color = a.getAttribute('href') === `#${id}`
-            ? 'var(--text)'
-            : '';
+        spyAnchors.forEach(a => {
+          a.style.color = a.getAttribute('href') === `#${id}` ? 'var(--text)' : '';
         });
       }
     });
   },
   { rootMargin: '-40% 0px -55% 0px' }
-);
-
-sections.forEach(s => spy.observe(s));
+).observe = (() => {
+  const spy = new IntersectionObserver(
+    entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const id = entry.target.id;
+          spyAnchors.forEach(a => {
+            a.style.color = a.getAttribute('href') === `#${id}` ? 'var(--text)' : '';
+          });
+        }
+      });
+    },
+    { rootMargin: '-40% 0px -55% 0px' }
+  );
+  document.querySelectorAll('section[id]').forEach(s => spy.observe(s));
+  return spy.observe.bind(spy);
+})();
