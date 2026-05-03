@@ -67,7 +67,6 @@ In `index.html`, find the `#schedule` section and update:
 
 ## Contact Info
 
-- **Phone:** 813-748-4904
 - **Email:** Remnantarmory@gmail.com
 
 To update, search `index.html` for `tel:` and `mailto:`.
